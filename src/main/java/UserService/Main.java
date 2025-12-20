@@ -84,10 +84,10 @@ public class Main {
 
         try {
             User user = userService.createUser(name, email, age);
-            System.out.println("✅ Пользователь создан успешно!");
+            System.out.println("Пользователь создан успешно!");
             System.out.println("ID: " + user.getId());
         } catch (Exception e) {
-            System.out.println("❌ Ошибка: " + e.getMessage());
+            System.out.println("Ошибка: " + e.getMessage());
         }
     }
 
@@ -132,10 +132,10 @@ public class Main {
                         System.out.println("Возраст: " + user.getAge());
                         System.out.println("Создан: " + user.getCreatedAt());
                     },
-                    () -> System.out.println("❌ Пользователь с ID " + id + " не найден")
+                    () -> System.out.println(" Пользователь с ID " + id + " не найден")
             );
         } catch (NumberFormatException e) {
-            System.out.println("❌ Некорректный формат ID");
+            System.out.println(" Некорректный формат ID");
         }
     }
 
@@ -179,13 +179,13 @@ public class Main {
                     email.isEmpty() ? null : email,
                     age);
 
-            System.out.println("✅ Пользователь обновлен успешно!");
+            System.out.println("Пользователь обновлен успешно!");
             System.out.println("Новые данные: " + updated.getName() + ", " + updated.getEmail());
 
         } catch (NumberFormatException e) {
-            System.out.println("❌ Некорректный формат ID");
+            System.out.println("Некорректный формат ID");
         } catch (Exception e) {
-            System.out.println("❌ Ошибка: " + e.getMessage());
+            System.out.println(" Ошибка: " + e.getMessage());
         }
     }
 
@@ -201,15 +201,15 @@ public class Main {
 
             if (confirmation.equalsIgnoreCase("y")) {
                 userService.deleteUser(id);
-                System.out.println("✅ Пользователь удален успешно!");
+                System.out.println(" Пользователь удален успешно!");
             } else {
                 System.out.println("Удаление отменено");
             }
 
         } catch (NumberFormatException e) {
-            System.out.println("❌ Некорректный формат ID");
+            System.out.println(" Некорректный формат ID");
         } catch (Exception e) {
-            System.out.println("❌ Ошибка: " + e.getMessage());
+            System.out.println(" Ошибка: " + e.getMessage());
         }
     }
 
@@ -218,7 +218,7 @@ public class Main {
         System.out.println("\n--- Статистика ---");
         System.out.println("Всего пользователей: " + count);
 
-        // Можно добавить больше статистики
+
         if (count > 0) {
             System.out.println("\nПоследние 5 пользователей:");
             List<User> users = userService.getAllUsers();
