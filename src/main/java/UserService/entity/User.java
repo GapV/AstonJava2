@@ -23,7 +23,7 @@ public class User {
     private int age;
 
     @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     public User() {
     }
@@ -32,7 +32,6 @@ public class User {
         this.name = name;
         this.email = email;
         this.age = age;
-        this.createdAt = LocalDateTime.now();
     }
 
     public void setId(Long id) {

@@ -20,7 +20,6 @@ public class UserService {
     }
 
     public User createUser(String name, String email, Integer age) {
-        // Валидация
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Имя не может быть пустым");
         }
@@ -29,7 +28,6 @@ public class UserService {
             throw new IllegalArgumentException("Некорректный email");
         }
 
-        // Проверка уникальности email
         if (userDao.existsByEmail(email)) {
             throw new IllegalArgumentException("Пользователь с таким email уже существует");
         }
@@ -72,7 +70,7 @@ public class UserService {
     }
 
     public void deleteUser(Long id) {
-        if (!userDao.findById(id).isPresent()) {
+        if (userDao.findById(id).isEmpty()) {
             throw new IllegalArgumentException("Пользователь не найден");
         }
         userDao.delete(id);

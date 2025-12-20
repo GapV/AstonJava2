@@ -4,7 +4,6 @@ import UserService.entity.User;
 import UserService.util.HibernateUtil;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -24,9 +23,7 @@ public class UserDaoImpl implements UserDao {
         Transaction transaction = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
-
-            session.persist(user); // или session.save(user) для Hibernate < 6
-
+            session.persist(user);
             transaction.commit();
             logger.info("Пользователь сохранен: {}", user.getEmail());
             return user;
@@ -54,7 +51,6 @@ public class UserDaoImpl implements UserDao {
     @Override
     public Optional<User> findByEmail(String email) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            // Используем HQL (Hibernate Query Language)
             Query<User> query = session.createQuery(
                     "FROM User WHERE email = :email", User.class);
             query.setParameter("email", email);
@@ -69,13 +65,7 @@ public class UserDaoImpl implements UserDao {
     @Override
     public List<User> findAll() {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            // Используем Criteria API (типобезопасный способ)
-            CriteriaBuilder cb = session.getCriteriaBuilder();
-            CriteriaQuery<User> cq = cb.createQuery(User.class);
-            Root<User> root = cq.from(User.class);
-            cq.select(root);
-
-            Query<User> query = session.createQuery(cq);
+            Query<User> query = session.createQuery("FROM User", User.class);
             return query.getResultList();
         } catch (Exception e) {
             logger.error("Ошибка при получении всех пользователей", e);
@@ -103,7 +93,6 @@ public class UserDaoImpl implements UserDao {
             Query<User> query = session.createQuery(
                     "FROM User WHERE age > :age ORDER BY age DESC", User.class);
             query.setParameter("age", age);
-
             return query.getResultList();
         } catch (Exception e) {
             logger.error("Ошибка при поиске пользователей старше {}", age, e);
@@ -116,10 +105,7 @@ public class UserDaoImpl implements UserDao {
         Transaction transaction = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
-
-            // merge() полезен, если объект мог быть отсоединен
             User updatedUser = session.merge(user);
-
             transaction.commit();
             logger.info("Пользователь обновлен: {}", user.getEmail());
             return updatedUser;

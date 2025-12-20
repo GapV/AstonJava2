@@ -9,18 +9,21 @@ public class HibernateUtil {
     private static final Logger logger = LoggerFactory.getLogger(HibernateUtil.class);
     private static SessionFactory sessionFactory;
 
-    static {
-        try {
-            sessionFactory = new Configuration()
-                    .configure("hibernate.cfg.xml")
-                    .buildSessionFactory();
-            logger.info("SessionFactory создана успешно");
-        } catch ( Throwable exception){
-            logger.error("Ошибка при создании SessionFactory",exception);
-            throw new ExceptionInInitializerError(exception);
+    private static void buildsSessionFactory() {
+        if (sessionFactory == null) {
+            try {
+                sessionFactory = new Configuration()
+                        .configure("hibernate.cfg.xml")
+                        .buildSessionFactory();
+                logger.info("SessionFactory создана успешно");
+            } catch (Throwable exception) {
+                logger.error("Ошибка при создании SessionFactory", exception);
+                throw new ExceptionInInitializerError(exception);
+            }
         }
     }
     public static SessionFactory getSessionFactory(){
+        buildsSessionFactory();
         return sessionFactory;
     }
     public static void shutdown(){

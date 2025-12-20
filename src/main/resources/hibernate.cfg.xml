@@ -5,34 +5,24 @@
 
 <hibernate-configuration>
     <session-factory>
-        <!-- Настройки подключения к БД -->
+
         <property name="hibernate.connection.driver_class">org.postgresql.Driver</property>
         <property name="hibernate.connection.url">jdbc:postgresql://localhost:5432/postgres</property>
         <property name="hibernate.connection.username">postgres</property>
         <property name="hibernate.connection.password">postgres</property>
         <property name="hibernate.dialect">org.hibernate.dialect.PostgreSQLDialect</property>
 
-        <!-- Показывать SQL запросы в консоли (удобно для отладки) -->
-        <property name="hibernate.show_sql">true</property>
-        <property name="hibernate.format_sql">true</property>
+        <property name="hibernate.show_sql">false</property>
+        <property name="hibernate.format_sql">false</property>
 
-        <!-- Автоматическое создание/обновление таблиц -->
-        <!-- validate: проверяет схему, не меняет её -->
-        <!-- update: обновляет схему при изменениях -->
-        <!-- create-drop: создаёт при запуске, удаляет при остановке -->
-        <!-- create: всегда создаёт заново (удаляет старые данные!) -->
         <property name="hibernate.hbm2ddl.auto">update</property>
 
-        <!-- Управление соединениями -->
         <property name="hibernate.connection.pool_size">10</property>
         <property name="hibernate.current_session_context_class">thread</property>
 
-        <!-- Отключаем второстепенные функции для производительности -->
         <property name="hibernate.jdbc.batch_size">20</property>
         <property name="hibernate.order_inserts">true</property>
 
-        <!-- Регистрируем наши entity-классы -->
-        <mapping class="UserService.entity.Student"/>
         <mapping class="UserService.entity.User"/>
 
     </session-factory>
