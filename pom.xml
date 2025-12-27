@@ -84,7 +84,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- AssertJ для удобных assertions -->
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
@@ -94,7 +93,7 @@
 
 
     </dependencies>
-    <!-- В раздел build -->
+
     <build>
         <plugins>
             <plugin>
@@ -102,10 +101,10 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.1.2</version>
                 <configuration>
-                    <!-- Параллельный запуск тестов -->
+
                     <parallel>methods</parallel>
                     <threadCount>4</threadCount>
-                    <!-- Разделение интеграционных и юнит-тестов -->
+
                     <excludes>
                         <exclude>**/*IntegrationTest.java</exclude>
                     </excludes>
@@ -117,7 +116,6 @@
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>3.1.2</version>
                 <configuration>
-                    <!-- Запуск интеграционных тестов -->
                     <includes>
                         <include>**/*IntegrationTest.java</include>
                     </includes>
