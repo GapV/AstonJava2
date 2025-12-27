@@ -6,6 +6,7 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 import org.slf4j.Logger;
@@ -14,6 +15,8 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Optional;
 
+import static UserService.util.HibernateUtil.getSessionFactory;
+
 public class UserDaoImpl implements UserDao {
 
     private static final Logger logger = LoggerFactory.getLogger(UserDaoImpl.class);
@@ -21,7 +24,7 @@ public class UserDaoImpl implements UserDao {
     @Override
     public User save(User user) {
         Transaction transaction = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
             session.persist(user);
             transaction.commit();
@@ -39,7 +42,7 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public Optional<User> findById(Long id) {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = getSessionFactory().openSession()) {
             User user = session.get(User.class, id);
             return Optional.ofNullable(user);
         } catch (Exception e) {
@@ -50,7 +53,7 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public Optional<User> findByEmail(String email) {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = getSessionFactory().openSession()) {
             Query<User> query = session.createQuery(
                     "FROM User WHERE email = :email", User.class);
             query.setParameter("email", email);
@@ -64,7 +67,7 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public List<User> findAll() {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = getSessionFactory().openSession()) {
             Query<User> query = session.createQuery("FROM User", User.class);
             return query.getResultList();
         } catch (Exception e) {
@@ -75,7 +78,7 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public List<User> findByName(String name) {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = getSessionFactory().openSession()) {
             Query<User> query = session.createQuery(
                     "FROM User WHERE name LIKE :name", User.class);
             query.setParameter("name", "%" + name + "%");
@@ -89,7 +92,7 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public List<User> findByAgeGreaterThan(int age) {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = getSessionFactory().openSession()) {
             Query<User> query = session.createQuery(
                     "FROM User WHERE age > :age ORDER BY age DESC", User.class);
             query.setParameter("age", age);
@@ -103,7 +106,7 @@ public class UserDaoImpl implements UserDao {
     @Override
     public User update(User user) {
         Transaction transaction = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
             User updatedUser = session.merge(user);
             transaction.commit();
@@ -122,7 +125,7 @@ public class UserDaoImpl implements UserDao {
     @Override
     public void delete(Long id) {
         Transaction transaction = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
 
             User user = session.get(User.class, id);
@@ -150,7 +153,7 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public long count() {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = getSessionFactory().openSession()) {
             Query<Long> query = session.createQuery(
                     "SELECT COUNT(*) FROM User", Long.class);
             return query.uniqueResult();
@@ -162,7 +165,7 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public boolean existsByEmail(String email) {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try (Session session = getSessionFactory().openSession()) {
             Query<Long> query = session.createQuery(
                     "SELECT COUNT(*) FROM User WHERE email = :email", Long.class);
             query.setParameter("email", email);

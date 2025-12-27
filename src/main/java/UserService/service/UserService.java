@@ -19,6 +19,10 @@ public class UserService {
         this.userDao = new UserDaoImpl();
     }
 
+    public UserService(UserDao userDao) {
+        this.userDao = userDao;
+    }
+
     public User createUser(String name, String email, Integer age) {
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Имя не может быть пустым");
