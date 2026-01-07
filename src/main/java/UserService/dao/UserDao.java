@@ -2,6 +2,7 @@ package UserService.dao;
 
 import UserService.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
@@ -13,8 +14,9 @@ public interface UserDao extends JpaRepository<User, Long> {
 //
 //    // READ
 //    Optional<User> findById(Long id);
-//    Optional<User> findByEmail(String email);
+      Optional<User> findByEmail(String email);
 //    List<User> findAll();
+      @Query("FROM User WHERE name LIKE :name")
       List<User> findByName(String name);
 //    List<User> findByAgeGreaterThan(int age);
 //

@@ -1,8 +1,8 @@
 package UserService.unit.dao;
 
-import UserService.dao.UserDaoImpl;
+import UserService.dao.UserDao;
+
 import UserService.entity.User;
-import UserService.util.HibernateUtil;
 import UserService.util.TestDataFactory;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -45,21 +45,16 @@ class UserDaoUnitTest {
     @Mock
     private Query<Long> longQuery;
     @Mock
-    private UserDaoImpl userDao;
-    private MockedStatic<HibernateUtil> hibernateUtilMock;
+    private UserDao userDao;
+
 
     @BeforeEach
     void setUp() {
-        hibernateUtilMock = Mockito.mockStatic(HibernateUtil.class);
-        hibernateUtilMock.when(HibernateUtil::getSessionFactory).thenReturn(sessionFactory);
 
-        userDao = new UserDaoImpl();
     }
     @AfterEach
     void tearDown() {
-        if (hibernateUtilMock != null) {
-            hibernateUtilMock.close();
-        }
+
     }
     @Test
     @DisplayName("DAO Unit: Поиск по ID - успешный")

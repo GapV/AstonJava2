@@ -2,7 +2,6 @@ package UserService.integration;
 
 import UserService.config.TestDatabaseConfig;
 import UserService.dao.UserDao;
-import UserService.dao.UserDaoImpl;
 import UserService.entity.User;
 import UserService.util.TestDataFactory;
 import org.hibernate.SessionFactory;
@@ -27,11 +26,6 @@ class UserDaoIntegrationTest extends PostgresTestContainer {
 
         testSessionFactory = TestDatabaseConfig.createTestSessionFactory();
 
-        userDao = new UserDaoImpl() {
-            protected SessionFactory getSessionFactory() {
-                return testSessionFactory;
-            }
-        };
     }
 
     @Test
