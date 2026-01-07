@@ -6,22 +6,20 @@ import UserService.dao.UserDaoImpl;
 import UserService.entity.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
-
+@Service
 public class UserService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
     private final UserDao userDao;
 
-    public UserService() {
-        this.userDao = new UserDaoImpl();
-    }
-
     public UserService(UserDao userDao) {
         this.userDao = userDao;
     }
+
 
     public User createUser(String name, String email, Integer age) {
         if (name == null || name.trim().isEmpty()) {
@@ -70,14 +68,14 @@ public class UserService {
             user.setAge(age);
         }
 
-        return userDao.update(user);
+        return userDao.save(user);
     }
 
     public void deleteUser(Long id) {
         if (userDao.findById(id).isEmpty()) {
             throw new IllegalArgumentException("Пользователь не найден");
         }
-        userDao.delete(id);
+        userDao.deleteById(id);
     }
 
     public List<User> searchUsersByName(String name) {

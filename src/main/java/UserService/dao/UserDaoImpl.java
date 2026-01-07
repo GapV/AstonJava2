@@ -17,11 +17,11 @@ import java.util.Optional;
 
 import static UserService.util.HibernateUtil.getSessionFactory;
 
-public class UserDaoImpl implements UserDao {
+public class UserDaoImpl {
 
     private static final Logger logger = LoggerFactory.getLogger(UserDaoImpl.class);
 
-    @Override
+//    @Override
     public User save(User user) {
         Transaction transaction = null;
         try (Session session = getSessionFactory().openSession()) {
@@ -40,7 +40,7 @@ public class UserDaoImpl implements UserDao {
         }
     }
 
-    @Override
+//    @Override
     public Optional<User> findById(Long id) {
         try (Session session = getSessionFactory().openSession()) {
             User user = session.get(User.class, id);
@@ -51,7 +51,7 @@ public class UserDaoImpl implements UserDao {
         }
     }
 
-    @Override
+//    @Override
     public Optional<User> findByEmail(String email) {
         try (Session session = getSessionFactory().openSession()) {
             Query<User> query = session.createQuery(
@@ -65,7 +65,7 @@ public class UserDaoImpl implements UserDao {
         }
     }
 
-    @Override
+//    @Override
     public List<User> findAll() {
         try (Session session = getSessionFactory().openSession()) {
             Query<User> query = session.createQuery("FROM User", User.class);
@@ -76,7 +76,7 @@ public class UserDaoImpl implements UserDao {
         }
     }
 
-    @Override
+//    @Override
     public List<User> findByName(String name) {
         try (Session session = getSessionFactory().openSession()) {
             Query<User> query = session.createQuery(
@@ -90,7 +90,7 @@ public class UserDaoImpl implements UserDao {
         }
     }
 
-    @Override
+//    @Override
     public List<User> findByAgeGreaterThan(int age) {
         try (Session session = getSessionFactory().openSession()) {
             Query<User> query = session.createQuery(
@@ -103,7 +103,7 @@ public class UserDaoImpl implements UserDao {
         }
     }
 
-    @Override
+//    @Override
     public User update(User user) {
         Transaction transaction = null;
         try (Session session = getSessionFactory().openSession()) {
@@ -122,7 +122,7 @@ public class UserDaoImpl implements UserDao {
         }
     }
 
-    @Override
+//    @Override
     public void delete(Long id) {
         Transaction transaction = null;
         try (Session session = getSessionFactory().openSession()) {
@@ -146,12 +146,12 @@ public class UserDaoImpl implements UserDao {
         }
     }
 
-    @Override
+//    @Override
     public void delete(User user) {
         delete(user.getId());
     }
 
-    @Override
+//    @Override
     public long count() {
         try (Session session = getSessionFactory().openSession()) {
             Query<Long> query = session.createQuery(
@@ -163,7 +163,7 @@ public class UserDaoImpl implements UserDao {
         }
     }
 
-    @Override
+//    @Override
     public boolean existsByEmail(String email) {
         try (Session session = getSessionFactory().openSession()) {
             Query<Long> query = session.createQuery(
