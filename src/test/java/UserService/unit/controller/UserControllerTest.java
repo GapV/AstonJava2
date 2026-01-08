@@ -47,7 +47,7 @@ class UserControllerTest {
         mockMvc = MockMvcBuilders.standaloneSetup(userController).build();
         objectMapper = new ObjectMapper();
 
-        // Подготовка тестовых данных
+
         testUserResponse = new UserResponse();
         testUserResponse.setId(1L);
         testUserResponse.setName("John Doe");

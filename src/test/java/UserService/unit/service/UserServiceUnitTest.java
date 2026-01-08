@@ -80,7 +80,7 @@ class UserServiceUnitTest {
     @Test
     @DisplayName("Service: Успешное создание пользователя")
     void createUser_shouldCreateUserSuccessfully() {
-        // Arrange
+
         CreateUserRequest request = createCreateUserRequest("Test User", "new@example.com", 25);
 
         when(userDao.existsByEmail("new@example.com")).thenReturn(false);
@@ -88,10 +88,10 @@ class UserServiceUnitTest {
         when(userDao.save(testUser)).thenReturn(testUser);
         when(userMapper.toResponse(testUser)).thenReturn(testUserResponse);
 
-        // Act
+
         UserResponse result = userService.createUser(request);
 
-        // Assert
+
         assertNotNull(result);
         assertEquals(1L, result.getId());
         assertEquals("Test User", result.getName());
@@ -106,12 +106,12 @@ class UserServiceUnitTest {
     @Test
     @DisplayName("Service: Создание пользователя - проверка уникальности email")
     void createUser_shouldThrowExceptionWhenEmailAlreadyExists() {
-        // Arrange
+
         CreateUserRequest request = createCreateUserRequest("Test", "existing@example.com", 25);
 
         when(userDao.existsByEmail("existing@example.com")).thenReturn(true);
 
-        // Act & Assert
+
         Exception exception = assertThrows(
                 RuntimeException.class,
                 () -> userService.createUser(request)
@@ -127,7 +127,7 @@ class UserServiceUnitTest {
     @Test
     @DisplayName("Service: Создание пользователя - валидация ID при получении")
     void getUserById_shouldValidateId() {
-        // Arrange & Act & Assert
+
         IllegalArgumentException nullIdException = assertThrows(
                 IllegalArgumentException.class,
                 () -> userService.getUserById(null)
@@ -152,14 +152,14 @@ class UserServiceUnitTest {
     @Test
     @DisplayName("Service: Получение пользователя по ID")
     void getUserById_shouldReturnUserWhenExists() {
-        // Arrange
+
         when(userDao.findById(1L)).thenReturn(Optional.of(testUser));
         when(userMapper.toResponse(testUser)).thenReturn(testUserResponse);
 
-        // Act
+
         UserResponse result = userService.getUserById(1L);
 
-        // Assert
+
         assertNotNull(result);
         assertEquals(1L, result.getId());
         assertEquals("Test User", result.getName());
@@ -170,10 +170,10 @@ class UserServiceUnitTest {
     @Test
     @DisplayName("Service: Получение пользователя по несуществующему ID")
     void getUserById_shouldThrowExceptionWhenUserNotExists() {
-        // Arrange
+
         when(userDao.findById(999L)).thenReturn(Optional.empty());
 
-        // Act & Assert
+
         RuntimeException exception = assertThrows(
                 RuntimeException.class,
                 () -> userService.getUserById(999L)
@@ -187,7 +187,7 @@ class UserServiceUnitTest {
     @Test
     @DisplayName("Service: Получение всех пользователей")
     void getAllUsers_shouldReturnAllUsers() {
-        // Arrange
+
         List<User> users = Arrays.asList(
                 TestDataFactory.createTestUser(1L, "user1@example.com"),
                 TestDataFactory.createTestUser(2L, "user2@example.com")
@@ -200,10 +200,10 @@ class UserServiceUnitTest {
         when(userMapper.toResponse(users.get(0))).thenReturn(userResponse1);
         when(userMapper.toResponse(users.get(1))).thenReturn(userResponse2);
 
-        // Act
+
         List<UserResponse> result = userService.getAllUsers();
 
-        // Assert
+
         assertThat(result)
                 .hasSize(2)
                 .extracting(UserResponse::getEmail)
@@ -216,7 +216,7 @@ class UserServiceUnitTest {
     @Test
     @DisplayName("Service: Обновление пользователя")
     void updateUser_shouldUpdateUserSuccessfully() {
-        // Arrange
+
         UpdateUserRequest request = createUpdateUserRequest("New Name", "new@example.com", 30);
 
         User updatedUser = new User();
@@ -232,10 +232,10 @@ class UserServiceUnitTest {
         when(userDao.save(any(User.class))).thenReturn(updatedUser);
         when(userMapper.toResponse(updatedUser)).thenReturn(updatedResponse);
 
-        // Act
+
         UserResponse result = userService.updateUser(1L, request);
 
-        // Assert
+
         assertEquals("New Name", result.getName());
         assertEquals("new@example.com", result.getEmail());
         assertEquals(30, result.getAge());
@@ -249,12 +249,12 @@ class UserServiceUnitTest {
     @Test
     @DisplayName("Service: Обновление пользователя - пользователь не найден")
     void updateUser_shouldThrowExceptionWhenUserNotFound() {
-        // Arrange
+
         UpdateUserRequest request = createUpdateUserRequest("New Name", "new@example.com", 30);
 
         when(userDao.findById(999L)).thenReturn(Optional.empty());
 
-        // Act & Assert
+
         RuntimeException exception = assertThrows(
                 RuntimeException.class,
                 () -> userService.updateUser(999L, request)
@@ -269,13 +269,13 @@ class UserServiceUnitTest {
     @Test
     @DisplayName("Service: Обновление пользователя - email уже занят другим пользователем")
     void updateUser_shouldThrowExceptionWhenEmailAlreadyTaken() {
-        // Arrange
+
         UpdateUserRequest request = createUpdateUserRequest(null, "taken@example.com", null);
 
         when(userDao.findById(1L)).thenReturn(Optional.of(testUser));
         when(userDao.existsByEmail("taken@example.com")).thenReturn(true);
 
-        // Act & Assert
+
         RuntimeException exception = assertThrows(
                 RuntimeException.class,
                 () -> userService.updateUser(1L, request)
@@ -290,7 +290,7 @@ class UserServiceUnitTest {
     @Test
     @DisplayName("Service: Обновление пользователя - частичное обновление")
     void updateUser_shouldAllowPartialUpdate() {
-        // Arrange
+
         testUser.setName("Old Name");
         testUser.setAge(25);
 
@@ -309,10 +309,10 @@ class UserServiceUnitTest {
         when(userDao.save(any(User.class))).thenReturn(updatedUser);
         when(userMapper.toResponse(updatedUser)).thenReturn(updatedResponse);
 
-        // Act
+
         UserResponse result = userService.updateUser(1L, request);
 
-        // Assert
+
         assertEquals("New Name", result.getName());
         assertEquals("test@example.com", result.getEmail()); // email не изменился
         assertEquals(25, result.getAge()); // возраст не изменился
@@ -325,14 +325,14 @@ class UserServiceUnitTest {
     @Test
     @DisplayName("Service: Удаление пользователя")
     void deleteUser_shouldDeleteUserSuccessfully() {
-        // Arrange
+
         when(userDao.findById(1L)).thenReturn(Optional.of(testUser));
         doNothing().when(userDao).deleteById(1L);
 
-        // Act
+
         userService.deleteUser(1L);
 
-        // Assert
+
         verify(userDao).findById(1L);
         verify(userDao).deleteById(1L);
     }
@@ -340,10 +340,10 @@ class UserServiceUnitTest {
     @Test
     @DisplayName("Service: Удаление несуществующего пользователя")
     void deleteUser_shouldThrowExceptionWhenUserNotFound() {
-        // Arrange
+
         when(userDao.findById(999L)).thenReturn(Optional.empty());
 
-        // Act & Assert
+
         RuntimeException exception = assertThrows(
                 RuntimeException.class,
                 () -> userService.deleteUser(999L)
@@ -357,7 +357,7 @@ class UserServiceUnitTest {
     @Test
     @DisplayName("Service: Поиск пользователей по имени")
     void searchUsersByName_shouldReturnMatchingUsers() {
-        // Arrange
+
         List<User> users = Arrays.asList(
                 TestDataFactory.createUserWithParams("John Doe", "john1@example.com", 30),
                 TestDataFactory.createUserWithParams("John Smith", "john2@example.com", 25)
@@ -370,10 +370,10 @@ class UserServiceUnitTest {
         when(userMapper.toResponse(users.get(0))).thenReturn(response1);
         when(userMapper.toResponse(users.get(1))).thenReturn(response2);
 
-        // Act
+
         List<UserResponse> result = userService.searchUsersByName("John");
 
-        // Assert
+
         assertThat(result)
                 .hasSize(2)
                 .extracting(UserResponse::getName)
@@ -386,13 +386,13 @@ class UserServiceUnitTest {
     @Test
     @DisplayName("Service: Получение количества пользователей")
     void getUserCount_shouldReturnCorrectCount() {
-        // Arrange
+
         when(userDao.count()).thenReturn(5L);
 
-        // Act
+
         long count = userService.getUserCount();
 
-        // Assert
+
         assertEquals(5L, count);
         verify(userDao).count();
     }
@@ -400,11 +400,11 @@ class UserServiceUnitTest {
     @Test
     @DisplayName("Service: Создание пользователя без возраста")
     void createUser_shouldAllowNullAge() {
-        // Arrange
+
         CreateUserRequest request = new CreateUserRequest();
         request.setName("Test User");
         request.setEmail("test@example.com");
-        // возраст не указан
+
 
         User userWithoutAge = new User();
         userWithoutAge.setId(1L);
@@ -421,10 +421,10 @@ class UserServiceUnitTest {
         when(userDao.save(userWithoutAge)).thenReturn(userWithoutAge);
         when(userMapper.toResponse(userWithoutAge)).thenReturn(responseWithoutAge);
 
-        // Act
+
         UserResponse result = userService.createUser(request);
 
-        // Assert
+
         assertNotNull(result);
         assertEquals("Test User", result.getName());
         assertEquals("test@example.com", result.getEmail());
@@ -437,7 +437,7 @@ class UserServiceUnitTest {
     @Test
     @DisplayName("Service: Обновление пользователя без изменений")
     void updateUser_shouldReturnSameUserWhenNoChanges() {
-        // Arrange
+
         UpdateUserRequest request = createUpdateUserRequest("Test User", "test@example.com", 25);
 
         testUser.setName("Test User");
@@ -447,10 +447,10 @@ class UserServiceUnitTest {
         when(userDao.save(testUser)).thenReturn(testUser);
         when(userMapper.toResponse(testUser)).thenReturn(testUserResponse);
 
-        // Act
+
         UserResponse result = userService.updateUser(1L, request);
 
-        // Assert
+
         assertEquals(testUserResponse.getId(), result.getId());
         assertEquals(testUserResponse.getName(), result.getName());
         assertEquals(testUserResponse.getEmail(), result.getEmail());
@@ -463,13 +463,13 @@ class UserServiceUnitTest {
     @Test
     @DisplayName("Service: Ошибка при создании пользователя - проброс исключения из маппера")
     void createUser_shouldHandleMapperException() {
-        // Arrange
+
         CreateUserRequest request = createCreateUserRequest("Test User", "test@example.com", 25);
 
         when(userDao.existsByEmail("test@example.com")).thenReturn(false);
         when(userMapper.toEntity(request)).thenThrow(new RuntimeException("Mapper error"));
 
-        // Act & Assert
+
         RuntimeException exception = assertThrows(
                 RuntimeException.class,
                 () -> userService.createUser(request)
@@ -483,7 +483,7 @@ class UserServiceUnitTest {
     @Test
     @DisplayName("Service: Обновление пользователя - тот же email")
     void updateUser_shouldNotCheckEmailWhenSameEmailProvided() {
-        // Arrange
+
         testUser.setEmail("test@example.com");
 
         UpdateUserRequest request = createUpdateUserRequest("New Name", "test@example.com", 30);
@@ -500,10 +500,10 @@ class UserServiceUnitTest {
         when(userDao.save(any(User.class))).thenReturn(updatedUser);
         when(userMapper.toResponse(updatedUser)).thenReturn(updatedResponse);
 
-        // Act
+
         UserResponse result = userService.updateUser(1L, request);
 
-        // Assert
+
         assertEquals("New Name", result.getName());
         assertEquals("test@example.com", result.getEmail());
         verify(userDao, never()).existsByEmail(anyString());
