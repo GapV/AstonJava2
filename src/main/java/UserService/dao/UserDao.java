@@ -9,25 +9,11 @@ import java.util.Optional;
 
 public interface UserDao extends JpaRepository<User, Long> {
 
-//    // CREATE
-//    User save(User user);
-//
-//    // READ
-//    Optional<User> findById(Long id);
       Optional<User> findByEmail(String email);
-//    List<User> findAll();
+
       @Query("FROM User WHERE name LIKE :name")
+
       List<User> findByName(String name);
-//    List<User> findByAgeGreaterThan(int age);
-//
-//    // UPDATE
-//    User update(User user);
-//
-//    // DELETE
-//    void delete(Long id);
-//    void delete(User user);
-//
-//    // Дополнительные методы
-//    long count();
-    boolean existsByEmail(String email);
+
+      boolean existsByEmail(String email);
 }
