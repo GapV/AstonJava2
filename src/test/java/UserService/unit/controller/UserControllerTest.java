@@ -7,6 +7,7 @@ import UserService.dto.UserResponse;
 import UserService.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -19,6 +20,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -47,7 +50,6 @@ class UserControllerTest {
         mockMvc = MockMvcBuilders.standaloneSetup(userController).build();
         objectMapper = new ObjectMapper();
 
-
         testUserResponse = new UserResponse();
         testUserResponse.setId(1L);
         testUserResponse.setName("John Doe");
@@ -66,6 +68,7 @@ class UserControllerTest {
     }
 
     @Test
+    @DisplayName("Controller: POST /api/users - Успешное создание пользователя")
     void createUser_ShouldReturnCreatedStatus() throws Exception {
         when(userService.createUser(any(CreateUserRequest.class)))
                 .thenReturn(testUserResponse);
@@ -83,10 +86,11 @@ class UserControllerTest {
     }
 
     @Test
+    @DisplayName("Controller: POST /api/users - Создание пользователя с невалидными данными возвращает 400")
     void createUser_WithInvalidData_ShouldReturnBadRequest() throws Exception {
         CreateUserRequest invalidRequest = new CreateUserRequest();
-        invalidRequest.setName("");  // Пустое имя
-        invalidRequest.setEmail("invalid-email");  // Невалидный email
+        invalidRequest.setName("");
+        invalidRequest.setEmail("invalid-email");
 
         mockMvc.perform(post("/api/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -95,6 +99,7 @@ class UserControllerTest {
     }
 
     @Test
+    @DisplayName("Controller: GET /api/users/{id} - Успешное получение пользователя по ID")
     void getUserById_ShouldReturnUser() throws Exception {
         when(userService.getUserById(1L)).thenReturn(testUserResponse);
 
@@ -107,17 +112,21 @@ class UserControllerTest {
     }
 
     @Test
-    void getUserById_WithInvalidId_ShouldReturnError() throws Exception {
+    @DisplayName("Controller: GET /api/users/{id} - Получение несуществующего пользователя возвращает ошибку")
+    void getUserById_WithInvalidId_ShouldReturnError() {
         when(userService.getUserById(999L))
                 .thenThrow(new RuntimeException("Пользователь не найден"));
 
-        mockMvc.perform(get("/api/users/{id}", 999L))
-                .andExpect(status().is5xxServerError());
+        Exception exception = assertThrows(Exception.class, () ->
+                mockMvc.perform(get("/api/users/{id}", 999L)));
+
+        assertTrue(exception.getMessage().contains("Пользователь не найден"));
 
         verify(userService, times(1)).getUserById(999L);
     }
 
     @Test
+    @DisplayName("Controller: GET /api/users - Успешное получение всех пользователей")
     void getAllUsers_ShouldReturnList() throws Exception {
         List<UserResponse> users = new ArrayList<>();
         users.add(testUserResponse);
@@ -141,6 +150,7 @@ class UserControllerTest {
     }
 
     @Test
+    @DisplayName("Controller: PUT /api/users/update/{id} - Успешное обновление пользователя")
     void updateUser_ShouldReturnUpdatedUser() throws Exception {
         UserResponse updatedResponse = new UserResponse();
         updatedResponse.setId(1L);
@@ -162,6 +172,7 @@ class UserControllerTest {
     }
 
     @Test
+    @DisplayName("Controller: DELETE /api/users/delete/{id} - Успешное удаление пользователя")
     void deleteUser_ShouldReturnNoContent() throws Exception {
         doNothing().when(userService).deleteUser(1L);
 
@@ -172,6 +183,7 @@ class UserControllerTest {
     }
 
     @Test
+    @DisplayName("Controller: GET /api/users/search?name={name} - Успешный поиск пользователей по имени")
     void searchUsersByName_ShouldReturnMatchingUsers() throws Exception {
         List<UserResponse> searchResults = new ArrayList<>();
         searchResults.add(testUserResponse);
@@ -188,6 +200,7 @@ class UserControllerTest {
     }
 
     @Test
+    @DisplayName("Controller: GET /api/users/count - Успешное получение количества пользователей")
     void getUsersCount_ShouldReturnCount() throws Exception {
         when(userService.getUserCount()).thenReturn(10L);
 
@@ -199,14 +212,17 @@ class UserControllerTest {
     }
 
     @Test
-    void updateUser_WithInvalidId_ShouldReturnError() throws Exception {
+    @DisplayName("Controller: PUT /api/users/update/{id} - Обновление несуществующего пользователя возвращает ошибку")
+    void updateUser_WithInvalidId_ShouldReturnError() {
         when(userService.updateUser(eq(999L), any(UpdateUserRequest.class)))
                 .thenThrow(new RuntimeException("Пользователь не найден"));
 
-        mockMvc.perform(put("/api/users/update/{id}", 999L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(testUpdateRequest)))
-                .andExpect(status().is5xxServerError());
+        Exception exception = assertThrows(Exception.class, () ->
+                mockMvc.perform(put("/api/users/update/{id}", 999L)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(testUpdateRequest))));
+
+        assertTrue(exception.getMessage().contains("Пользователь не найден"));
 
         verify(userService, times(1)).updateUser(eq(999L), any(UpdateUserRequest.class));
     }
