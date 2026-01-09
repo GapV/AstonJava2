@@ -1,90 +1,136 @@
 package UserService.service;
 
-
 import UserService.dao.UserDao;
-import UserService.dao.UserDaoImpl;
+import UserService.dto.CreateUserRequest;
+import UserService.dto.UpdateUserRequest;
+import UserService.dto.UserResponse;
 import UserService.entity.User;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import UserService.mapper.UserMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class UserService {
 
-    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
     private final UserDao userDao;
+    private final UserMapper userMapper;
 
-    public UserService() {
-        this.userDao = new UserDaoImpl();
+    @Transactional
+    public UserResponse createUser(CreateUserRequest request) {
+        try {
+            if (userDao.existsByEmail(request.getEmail())) {
+                throw new Exception ("Пользователь с таким email уже существует");
+            }
+
+            User user = userMapper.toEntity(request);
+            User savedUser = userDao.save(user);
+            log.info("Пользователь сохранен: {}", user.getEmail());
+            return userMapper.toResponse(savedUser);
+        } catch (Exception e) {
+            log.error("Ошибка при сохранении пользователя", e);
+            throw new RuntimeException("Не удалось сохранить пользователя", e);
+        }
     }
 
-    public UserService(UserDao userDao) {
-        this.userDao = userDao;
-    }
-
-    public User createUser(String name, String email, Integer age) {
-        if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Имя не может быть пустым");
-        }
-
-        if (email == null || !email.contains("@")) {
-            throw new IllegalArgumentException("Некорректный email");
-        }
-
-        if (userDao.existsByEmail(email)) {
-            throw new IllegalArgumentException("Пользователь с таким email уже существует");
-        }
-
-        User user = new User(name, email, age);
-        return userDao.save(user);
-    }
-
-    public Optional<User> getUserById(Long id) {
+    public UserResponse getUserById(Long id) {
         if (id == null || id <= 0) {
             throw new IllegalArgumentException("Некорректный ID");
         }
-        return userDao.findById(id);
-    }
-
-    public List<User> getAllUsers() {
-        return userDao.findAll();
-    }
-
-    public User updateUser(Long id, String name, String email, Integer age) {
-        User user = userDao.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
-
-        if (name != null) {
-            user.setName(name);
+        try {
+            Optional<User> userOptional = userDao.findById(id);
+            User user = userOptional.orElseThrow(() ->
+                    new Exception("Пользователь не найден")
+            );
+            return userMapper.toResponse(user);
+        } catch (Exception e) {
+            log.error("Ошибка при поиске пользователя по ID: {}", id, e);
+            throw new RuntimeException("Ошибка при поиске пользователя", e);
         }
+    }
 
-        if (email != null && !email.equals(user.getEmail())) {
-            if (userDao.existsByEmail(email)) {
-                throw new IllegalArgumentException("Новый email уже занят");
+    public List<UserResponse> getAllUsers() {
+        try {
+            List<User> users = userDao.findAll();
+            return users.stream()
+                    .map(userMapper::toResponse)
+                    .toList();
+        } catch (Exception e) {
+            log.error("Ошибка при получении всех пользователей", e);
+            throw new RuntimeException("Ошибка при получении пользователей", e);
+        }
+    }
+
+    @Transactional
+    public UserResponse updateUser(Long id, UpdateUserRequest request) {
+        try {
+            User user = userDao.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
+
+            if (request.getName() != null) {
+                user.setName(request.getName());
             }
-            user.setEmail(email);
-        }
 
-        if (age != null) {
-            user.setAge(age);
-        }
+            if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
+                if (userDao.existsByEmail(request.getEmail())) {
+                    throw new IllegalArgumentException("Новый email уже занят");
+                }
+                user.setEmail(request.getEmail());
+            }
 
-        return userDao.update(user);
+            if (request.getAge() != null) {
+                user.setAge(request.getAge());
+            }
+
+            User updatedUser = userDao.save(user);
+            log.info("Пользователь обновлен: {}", user.getEmail());
+            return userMapper.toResponse(updatedUser);
+        } catch (Exception e) {
+            log.error("Ошибка при обновлении пользователя: {}", e);
+            throw new RuntimeException("Не удалось обновить пользователя", e);
+        }
     }
 
+    @Transactional
     public void deleteUser(Long id) {
-        if (userDao.findById(id).isEmpty()) {
-            throw new IllegalArgumentException("Пользователь не найден");
+        try {
+            if (userDao.findById(id).isEmpty()) {
+                log.warn("Пользователь с ID {} не найден", id);
+                throw new IllegalArgumentException("Пользователь не найден");
+            }
+            userDao.deleteById(id);
+            log.info("Пользователь удален: {}", id);
+        } catch (Exception e) {
+            log.error("Ошибка при удалении пользователя: {}", id, e);
+            throw new RuntimeException("Не удалось удалить пользователя", e);
         }
-        userDao.delete(id);
     }
 
-    public List<User> searchUsersByName(String name) {
-        return userDao.findByName(name);
+    public List<UserResponse> searchUsersByName(String name) {
+        try {
+            List<User> users = userDao.findByName(name);
+            return users.stream()
+                    .map(userMapper::toResponse)
+                    .toList();
+        } catch (Exception e) {
+            log.error("Ошибка при поиске пользователей по имени: {}", name, e);
+            throw new RuntimeException("Ошибка при поиске пользователей", e);
+        }
     }
 
     public long getUserCount() {
-        return userDao.count();
+        try {
+            return userDao.count();
+        } catch (Exception e) {
+            log.error("Ошибка при подсчете пользователей", e);
+            throw new RuntimeException("Ошибка при подсчете пользователей", e);
+        }
     }
 }
