@@ -1,30 +1,19 @@
 package UserService.dao;
 
 import UserService.entity.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
 
-public interface UserDao {
+public interface UserDao extends JpaRepository<User, Long> {
 
-    // CREATE
-    User save(User user);
+      Optional<User> findByEmail(String email);
 
-    // READ
-    Optional<User> findById(Long id);
-    Optional<User> findByEmail(String email);
-    List<User> findAll();
-    List<User> findByName(String name);
-    List<User> findByAgeGreaterThan(int age);
+      @Query("FROM User WHERE name LIKE :name")
 
-    // UPDATE
-    User update(User user);
+      List<User> findByName(String name);
 
-    // DELETE
-    void delete(Long id);
-    void delete(User user);
-
-    // Дополнительные методы
-    long count();
-    boolean existsByEmail(String email);
+      boolean existsByEmail(String email);
 }

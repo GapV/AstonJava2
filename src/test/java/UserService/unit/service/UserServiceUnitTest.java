@@ -1,7 +1,11 @@
 package UserService.unit.service;
 
 import UserService.dao.UserDao;
+import UserService.dto.CreateUserRequest;
+import UserService.dto.UpdateUserRequest;
+import UserService.dto.UserResponse;
 import UserService.entity.User;
+import UserService.mapper.UserMapper;
 import UserService.service.UserService;
 import UserService.util.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,93 +33,120 @@ class UserServiceUnitTest {
     @Mock
     private UserDao userDao;
 
+    @Mock
+    private UserMapper userMapper;
+
     @InjectMocks
     private UserService userService;
 
     private User testUser;
+    private UserResponse testUserResponse;
 
     @BeforeEach
     void setUp() {
         testUser = TestDataFactory.createTestUser(1L, "test@example.com");
+        testUserResponse = new UserResponse();
+        testUserResponse.setId(1L);
+        testUserResponse.setName("Test User");
+        testUserResponse.setEmail("test@example.com");
+        testUserResponse.setAge(25);
+    }
+
+    private CreateUserRequest createCreateUserRequest(String name, String email, Integer age) {
+        CreateUserRequest request = new CreateUserRequest();
+        request.setName(name);
+        request.setEmail(email);
+        request.setAge(age);
+        return request;
+    }
+
+    private UpdateUserRequest createUpdateUserRequest(String name, String email, Integer age) {
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setName(name);
+        request.setEmail(email);
+        request.setAge(age);
+        return request;
+    }
+
+    private UserResponse createUserResponse(Long id, String name, String email, Integer age) {
+        UserResponse response = new UserResponse();
+        response.setId(id);
+        response.setName(name);
+        response.setEmail(email);
+        response.setAge(age);
+        return response;
     }
 
     @Test
     @DisplayName("Service: Успешное создание пользователя")
     void createUser_shouldCreateUserSuccessfully() {
 
+        CreateUserRequest request = createCreateUserRequest("Test User", "new@example.com", 25);
+
         when(userDao.existsByEmail("new@example.com")).thenReturn(false);
-        when(userDao.save(any(User.class))).thenReturn(testUser);
+        when(userMapper.toEntity(request)).thenReturn(testUser);
+        when(userDao.save(testUser)).thenReturn(testUser);
+        when(userMapper.toResponse(testUser)).thenReturn(testUserResponse);
 
-        User createdUser = userService.createUser("Test User", "new@example.com", 25);
 
-        assertNotNull(createdUser);
-        assertEquals("Test User", createdUser.getName());
-        assertEquals("test@example.com", createdUser.getEmail());
+        UserResponse result = userService.createUser(request);
+
+
+        assertNotNull(result);
+        assertEquals(1L, result.getId());
+        assertEquals("Test User", result.getName());
+        assertEquals("test@example.com", result.getEmail());
 
         verify(userDao).existsByEmail("new@example.com");
-        verify(userDao).save(any(User.class));
+        verify(userMapper).toEntity(request);
+        verify(userDao).save(testUser);
+        verify(userMapper).toResponse(testUser);
     }
 
     @Test
     @DisplayName("Service: Создание пользователя - проверка уникальности email")
     void createUser_shouldThrowExceptionWhenEmailAlreadyExists() {
 
+        CreateUserRequest request = createCreateUserRequest("Test", "existing@example.com", 25);
+
         when(userDao.existsByEmail("existing@example.com")).thenReturn(true);
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> userService.createUser("Test", "existing@example.com", 25)
+
+        Exception exception = assertThrows(
+                RuntimeException.class,
+                () -> userService.createUser(request)
         );
 
-        assertEquals("Пользователь с таким email уже существует", exception.getMessage());
+        assertEquals("Не удалось сохранить пользователя", exception.getMessage());
+        verify(userDao).existsByEmail("existing@example.com");
         verify(userDao, never()).save(any(User.class));
+        verify(userMapper, never()).toEntity(any());
+        verify(userMapper, never()).toResponse(any());
     }
 
     @Test
-    @DisplayName("Service: Создание пользователя - валидация имени")
-    void createUser_shouldValidateName() {
+    @DisplayName("Service: Создание пользователя - валидация ID при получении")
+    void getUserById_shouldValidateId() {
 
-        IllegalArgumentException emptyNameException = assertThrows(
+        IllegalArgumentException nullIdException = assertThrows(
                 IllegalArgumentException.class,
-                () -> userService.createUser("", "test@example.com", 25)
+                () -> userService.getUserById(null)
         );
-        assertEquals("Имя не может быть пустым", emptyNameException.getMessage());
+        assertEquals("Некорректный ID", nullIdException.getMessage());
 
-
-        IllegalArgumentException whitespaceNameException = assertThrows(
+        IllegalArgumentException negativeIdException = assertThrows(
                 IllegalArgumentException.class,
-                () -> userService.createUser("   ", "test@example.com", 25)
+                () -> userService.getUserById(-1L)
         );
-        assertEquals("Имя не может быть пустым", whitespaceNameException.getMessage());
+        assertEquals("Некорректный ID", negativeIdException.getMessage());
 
-
-        IllegalArgumentException nullNameException = assertThrows(
+        IllegalArgumentException zeroIdException = assertThrows(
                 IllegalArgumentException.class,
-                () -> userService.createUser(null, "test@example.com", 25)
+                () -> userService.getUserById(0L)
         );
-        assertEquals("Имя не может быть пустым", nullNameException.getMessage());
+        assertEquals("Некорректный ID", zeroIdException.getMessage());
 
-        verify(userDao, never()).save(any(User.class));
-    }
-
-    @Test
-    @DisplayName("Service: Создание пользователя - валидация email")
-    void createUser_shouldValidateEmail() {
-
-        IllegalArgumentException invalidEmailException = assertThrows(
-                IllegalArgumentException.class,
-                () -> userService.createUser("Test", "not-an-email", 25)
-        );
-        assertEquals("Некорректный email", invalidEmailException.getMessage());
-
-
-        IllegalArgumentException nullEmailException = assertThrows(
-                IllegalArgumentException.class,
-                () -> userService.createUser("Test", null, 25)
-        );
-        assertEquals("Некорректный email", nullEmailException.getMessage());
-
-        verify(userDao, never()).save(any(User.class));
+        verify(userDao, never()).findById(anyLong());
     }
 
     @Test
@@ -123,55 +154,34 @@ class UserServiceUnitTest {
     void getUserById_shouldReturnUserWhenExists() {
 
         when(userDao.findById(1L)).thenReturn(Optional.of(testUser));
+        when(userMapper.toResponse(testUser)).thenReturn(testUserResponse);
 
 
-        Optional<User> result = userService.getUserById(1L);
+        UserResponse result = userService.getUserById(1L);
 
 
-        assertTrue(result.isPresent());
-        assertEquals(testUser.getId(), result.get().getId());
+        assertNotNull(result);
+        assertEquals(1L, result.getId());
+        assertEquals("Test User", result.getName());
         verify(userDao).findById(1L);
+        verify(userMapper).toResponse(testUser);
     }
 
     @Test
     @DisplayName("Service: Получение пользователя по несуществующему ID")
-    void getUserById_shouldReturnEmptyWhenUserNotExists() {
+    void getUserById_shouldThrowExceptionWhenUserNotExists() {
 
         when(userDao.findById(999L)).thenReturn(Optional.empty());
 
 
-        Optional<User> result = userService.getUserById(999L);
+        RuntimeException exception = assertThrows(
+                RuntimeException.class,
+                () -> userService.getUserById(999L)
+        );
 
-
-        assertFalse(result.isPresent());
+        assertEquals("Ошибка при поиске пользователя", exception.getMessage());
         verify(userDao).findById(999L);
-    }
-
-    @Test
-    @DisplayName("Service: Получение пользователя по ID - валидация ID")
-    void getUserById_shouldValidateId() {
-
-        IllegalArgumentException nullIdException = assertThrows(
-                IllegalArgumentException.class,
-                () -> userService.getUserById(null)
-        );
-        assertNotNull(nullIdException.getMessage());
-
-
-        IllegalArgumentException negativeIdException = assertThrows(
-                IllegalArgumentException.class,
-                () -> userService.getUserById(-1L)
-        );
-        assertFalse(negativeIdException.getMessage().contains("ID должен быть положительным"));
-
-
-        IllegalArgumentException zeroIdException = assertThrows(
-                IllegalArgumentException.class,
-                () -> userService.getUserById(0L)
-        );
-        assertFalse(zeroIdException.getMessage().contains("ID должен быть положительным"));
-
-        verify(userDao, never()).findById(anyLong());
+        verify(userMapper, never()).toResponse(any());
     }
 
     @Test
@@ -182,38 +192,48 @@ class UserServiceUnitTest {
                 TestDataFactory.createTestUser(1L, "user1@example.com"),
                 TestDataFactory.createTestUser(2L, "user2@example.com")
         );
+
+        UserResponse userResponse1 = createUserResponse(1L, "User 1", "user1@example.com", 30);
+        UserResponse userResponse2 = createUserResponse(2L, "User 2", "user2@example.com", 25);
+
         when(userDao.findAll()).thenReturn(users);
+        when(userMapper.toResponse(users.get(0))).thenReturn(userResponse1);
+        when(userMapper.toResponse(users.get(1))).thenReturn(userResponse2);
 
 
-        List<User> result = userService.getAllUsers();
+        List<UserResponse> result = userService.getAllUsers();
 
 
         assertThat(result)
                 .hasSize(2)
-                .extracting(User::getEmail)
+                .extracting(UserResponse::getEmail)
                 .containsExactly("user1@example.com", "user2@example.com");
 
         verify(userDao).findAll();
+        verify(userMapper, times(2)).toResponse(any(User.class));
     }
 
     @Test
     @DisplayName("Service: Обновление пользователя")
     void updateUser_shouldUpdateUserSuccessfully() {
 
-        User existingUser = TestDataFactory.createTestUser(1L, "old@example.com");
-        existingUser.setName("Old Name");
-        existingUser.setAge(25);
+        UpdateUserRequest request = createUpdateUserRequest("New Name", "new@example.com", 30);
 
-        User updatedUser = TestDataFactory.createTestUser(1L, "new@example.com");
+        User updatedUser = new User();
+        updatedUser.setId(1L);
         updatedUser.setName("New Name");
+        updatedUser.setEmail("new@example.com");
         updatedUser.setAge(30);
 
-        when(userDao.findById(1L)).thenReturn(Optional.of(existingUser));
+        UserResponse updatedResponse = createUserResponse(1L, "New Name", "new@example.com", 30);
+
+        when(userDao.findById(1L)).thenReturn(Optional.of(testUser));
         when(userDao.existsByEmail("new@example.com")).thenReturn(false);
-        when(userDao.update(any(User.class))).thenReturn(updatedUser);
+        when(userDao.save(any(User.class))).thenReturn(updatedUser);
+        when(userMapper.toResponse(updatedUser)).thenReturn(updatedResponse);
 
 
-        User result = userService.updateUser(1L, "New Name", "new@example.com", 30);
+        UserResponse result = userService.updateUser(1L, request);
 
 
         assertEquals("New Name", result.getName());
@@ -222,65 +242,84 @@ class UserServiceUnitTest {
 
         verify(userDao).findById(1L);
         verify(userDao).existsByEmail("new@example.com");
-        verify(userDao).update(any(User.class));
+        verify(userDao).save(any(User.class));
+        verify(userMapper).toResponse(updatedUser);
     }
 
     @Test
     @DisplayName("Service: Обновление пользователя - пользователь не найден")
     void updateUser_shouldThrowExceptionWhenUserNotFound() {
 
+        UpdateUserRequest request = createUpdateUserRequest("New Name", "new@example.com", 30);
+
         when(userDao.findById(999L)).thenReturn(Optional.empty());
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> userService.updateUser(999L, "New Name", "new@example.com", 30)
+
+        RuntimeException exception = assertThrows(
+                RuntimeException.class,
+                () -> userService.updateUser(999L, request)
         );
 
-        assertEquals("Пользователь не найден", exception.getMessage());
-        verify(userDao, never()).update(any(User.class));
+        assertEquals("Не удалось обновить пользователя", exception.getMessage());
+        verify(userDao).findById(999L);
+        verify(userDao, never()).save(any(User.class));
+        verify(userMapper, never()).toResponse(any());
     }
 
     @Test
     @DisplayName("Service: Обновление пользователя - email уже занят другим пользователем")
     void updateUser_shouldThrowExceptionWhenEmailAlreadyTaken() {
 
-        User existingUser = TestDataFactory.createTestUser(1L, "current@example.com");
+        UpdateUserRequest request = createUpdateUserRequest(null, "taken@example.com", null);
 
-        when(userDao.findById(1L)).thenReturn(Optional.of(existingUser));
+        when(userDao.findById(1L)).thenReturn(Optional.of(testUser));
         when(userDao.existsByEmail("taken@example.com")).thenReturn(true);
 
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> userService.updateUser(1L, "New Name", "taken@example.com", 30)
+        RuntimeException exception = assertThrows(
+                RuntimeException.class,
+                () -> userService.updateUser(1L, request)
         );
 
-        assertEquals("Новый email уже занят", exception.getMessage());
-        verify(userDao, never()).update(any(User.class));
+        assertEquals("Не удалось обновить пользователя", exception.getMessage());
+        verify(userDao).findById(1L);
+        verify(userDao).existsByEmail("taken@example.com");
+        verify(userDao, never()).save(any(User.class));
     }
 
     @Test
     @DisplayName("Service: Обновление пользователя - частичное обновление")
     void updateUser_shouldAllowPartialUpdate() {
 
-        User existingUser = TestDataFactory.createTestUser(1L, "current@example.com");
-        existingUser.setName("Old Name");
-        existingUser.setAge(25);
+        testUser.setName("Old Name");
+        testUser.setAge(25);
 
-        when(userDao.findById(1L)).thenReturn(Optional.of(existingUser));
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setName("New Name");
 
-        when(userDao.update(any(User.class))).thenAnswer(invocation ->
-                invocation.getArgument(0));
+        User updatedUser = new User();
+        updatedUser.setId(1L);
+        updatedUser.setName("New Name");
+        updatedUser.setEmail("test@example.com");
+        updatedUser.setAge(25);
+
+        UserResponse updatedResponse = createUserResponse(1L, "New Name", "test@example.com", 25);
+
+        when(userDao.findById(1L)).thenReturn(Optional.of(testUser));
+        when(userDao.save(any(User.class))).thenReturn(updatedUser);
+        when(userMapper.toResponse(updatedUser)).thenReturn(updatedResponse);
 
 
-        User result = userService.updateUser(1L, "New Name", null, null);
+        UserResponse result = userService.updateUser(1L, request);
 
 
         assertEquals("New Name", result.getName());
-        assertEquals("current@example.com", result.getEmail()); // email не изменился
+        assertEquals("test@example.com", result.getEmail()); // email не изменился
         assertEquals(25, result.getAge()); // возраст не изменился
 
+        verify(userDao).findById(1L);
         verify(userDao, never()).existsByEmail(anyString());
+        verify(userDao).save(any(User.class));
     }
 
     @Test
@@ -288,14 +327,14 @@ class UserServiceUnitTest {
     void deleteUser_shouldDeleteUserSuccessfully() {
 
         when(userDao.findById(1L)).thenReturn(Optional.of(testUser));
-        doNothing().when(userDao).delete(1L);
+        doNothing().when(userDao).deleteById(1L);
 
 
         userService.deleteUser(1L);
 
 
         verify(userDao).findById(1L);
-        verify(userDao).delete(1L);
+        verify(userDao).deleteById(1L);
     }
 
     @Test
@@ -305,13 +344,14 @@ class UserServiceUnitTest {
         when(userDao.findById(999L)).thenReturn(Optional.empty());
 
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+        RuntimeException exception = assertThrows(
+                RuntimeException.class,
                 () -> userService.deleteUser(999L)
         );
 
-        assertEquals("Пользователь не найден", exception.getMessage());
-        verify(userDao, never()).delete(anyLong());
+        assertEquals("Не удалось удалить пользователя", exception.getMessage());
+        verify(userDao).findById(999L);
+        verify(userDao, never()).deleteById(anyLong());
     }
 
     @Test
@@ -323,18 +363,24 @@ class UserServiceUnitTest {
                 TestDataFactory.createUserWithParams("John Smith", "john2@example.com", 25)
         );
 
+        UserResponse response1 = createUserResponse(1L, "John Doe", "john1@example.com", 30);
+        UserResponse response2 = createUserResponse(2L, "John Smith", "john2@example.com", 25);
+
         when(userDao.findByName("John")).thenReturn(users);
+        when(userMapper.toResponse(users.get(0))).thenReturn(response1);
+        when(userMapper.toResponse(users.get(1))).thenReturn(response2);
 
 
-        List<User> result = userService.searchUsersByName("John");
+        List<UserResponse> result = userService.searchUsersByName("John");
 
 
         assertThat(result)
                 .hasSize(2)
-                .extracting(User::getName)
+                .extracting(UserResponse::getName)
                 .containsExactly("John Doe", "John Smith");
 
         verify(userDao).findByName("John");
+        verify(userMapper, times(2)).toResponse(any(User.class));
     }
 
     @Test
@@ -355,42 +401,111 @@ class UserServiceUnitTest {
     @DisplayName("Service: Создание пользователя без возраста")
     void createUser_shouldAllowNullAge() {
 
+        CreateUserRequest request = new CreateUserRequest();
+        request.setName("Test User");
+        request.setEmail("test@example.com");
+
+
+        User userWithoutAge = new User();
+        userWithoutAge.setId(1L);
+        userWithoutAge.setName("Test User");
+        userWithoutAge.setEmail("test@example.com");
+
+        UserResponse responseWithoutAge = new UserResponse();
+        responseWithoutAge.setId(1L);
+        responseWithoutAge.setName("Test User");
+        responseWithoutAge.setEmail("test@example.com");
+
         when(userDao.existsByEmail("test@example.com")).thenReturn(false);
-        when(userDao.save(any(User.class))).thenAnswer(invocation -> {
-            User user = invocation.getArgument(0);
-            user.setId(1L);
-            return user;
-        });
+        when(userMapper.toEntity(request)).thenReturn(userWithoutAge);
+        when(userDao.save(userWithoutAge)).thenReturn(userWithoutAge);
+        when(userMapper.toResponse(userWithoutAge)).thenReturn(responseWithoutAge);
 
 
-        User createdUser = userService.createUser("Test User", "test@example.com", null);
+        UserResponse result = userService.createUser(request);
 
 
-        assertNotNull(createdUser);
-        assertEquals("Test User", createdUser.getName());
-        assertEquals("test@example.com", createdUser.getEmail());
-        assertNull(createdUser.getAge());
+        assertNotNull(result);
+        assertEquals("Test User", result.getName());
+        assertEquals("test@example.com", result.getEmail());
+        assertNull(result.getAge());
 
-        verify(userDao).save(any(User.class));
+        verify(userDao).existsByEmail("test@example.com");
+        verify(userDao).save(userWithoutAge);
     }
 
     @Test
     @DisplayName("Service: Обновление пользователя без изменений")
     void updateUser_shouldReturnSameUserWhenNoChanges() {
 
-        User existingUser = TestDataFactory.createTestUser(1L, "test@example.com");
-        existingUser.setName("Test User");
-        existingUser.setAge(25);
+        UpdateUserRequest request = createUpdateUserRequest("Test User", "test@example.com", 25);
 
-        when(userDao.findById(1L)).thenReturn(Optional.of(existingUser));
-        when(userDao.update(any(User.class))).thenReturn(existingUser);
+        testUser.setName("Test User");
+        testUser.setAge(25);
+
+        when(userDao.findById(1L)).thenReturn(Optional.of(testUser));
+        when(userDao.save(testUser)).thenReturn(testUser);
+        when(userMapper.toResponse(testUser)).thenReturn(testUserResponse);
 
 
-        User result = userService.updateUser(1L, "Test User", "test@example.com", 25);
+        UserResponse result = userService.updateUser(1L, request);
 
 
-        assertEquals(existingUser, result);
+        assertEquals(testUserResponse.getId(), result.getId());
+        assertEquals(testUserResponse.getName(), result.getName());
+        assertEquals(testUserResponse.getEmail(), result.getEmail());
+
         verify(userDao).findById(1L);
-        verify(userDao).update(any(User.class));
+        verify(userDao).save(testUser);
+        verify(userMapper).toResponse(testUser);
+    }
+
+    @Test
+    @DisplayName("Service: Ошибка при создании пользователя - проброс исключения из маппера")
+    void createUser_shouldHandleMapperException() {
+
+        CreateUserRequest request = createCreateUserRequest("Test User", "test@example.com", 25);
+
+        when(userDao.existsByEmail("test@example.com")).thenReturn(false);
+        when(userMapper.toEntity(request)).thenThrow(new RuntimeException("Mapper error"));
+
+
+        RuntimeException exception = assertThrows(
+                RuntimeException.class,
+                () -> userService.createUser(request)
+        );
+
+        assertEquals("Не удалось сохранить пользователя", exception.getMessage());
+        verify(userDao).existsByEmail("test@example.com");
+        verify(userDao, never()).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("Service: Обновление пользователя - тот же email")
+    void updateUser_shouldNotCheckEmailWhenSameEmailProvided() {
+
+        testUser.setEmail("test@example.com");
+
+        UpdateUserRequest request = createUpdateUserRequest("New Name", "test@example.com", 30);
+
+        User updatedUser = new User();
+        updatedUser.setId(1L);
+        updatedUser.setName("New Name");
+        updatedUser.setEmail("test@example.com");
+        updatedUser.setAge(30);
+
+        UserResponse updatedResponse = createUserResponse(1L, "New Name", "test@example.com", 30);
+
+        when(userDao.findById(1L)).thenReturn(Optional.of(testUser));
+        when(userDao.save(any(User.class))).thenReturn(updatedUser);
+        when(userMapper.toResponse(updatedUser)).thenReturn(updatedResponse);
+
+
+        UserResponse result = userService.updateUser(1L, request);
+
+
+        assertEquals("New Name", result.getName());
+        assertEquals("test@example.com", result.getEmail());
+        verify(userDao, never()).existsByEmail(anyString());
     }
 }
