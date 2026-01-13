@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import UserService.kafka.UserEventProducer;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,6 +22,8 @@ public class UserService {
 
     private final UserDao userDao;
     private final UserMapper userMapper;
+    private final UserEventProducer userEventProducer;
+
 
     @Transactional
     public UserResponse createUser(CreateUserRequest request) {
@@ -33,6 +35,14 @@ public class UserService {
             User user = userMapper.toEntity(request);
             User savedUser = userDao.save(user);
             log.info("Пользователь сохранен: {}", user.getEmail());
+
+            // Отправляем событие в Kafka
+            userEventProducer.sendUserCreatedEvent(
+                    savedUser.getId(),
+                    savedUser.getName(),
+                    savedUser.getEmail()
+
+            );
             return userMapper.toResponse(savedUser);
         } catch (Exception e) {
             log.error("Ошибка при сохранении пользователя", e);
@@ -101,12 +111,21 @@ public class UserService {
     @Transactional
     public void deleteUser(Long id) {
         try {
-            if (userDao.findById(id).isEmpty()) {
-                log.warn("Пользователь с ID {} не найден", id);
-                throw new IllegalArgumentException("Пользователь не найден");
-            }
+            User user = userDao.findById(id)
+                    .orElseThrow(() -> {
+                        log.warn("Пользователь с ID {} не найден", id);
+                        return new IllegalArgumentException("Пользователь не найден");
+                    });
+
+            String userEmail = user.getEmail();
+            String userName = user.getName();
+
             userDao.deleteById(id);
             log.info("Пользователь удален: {}", id);
+
+            // Отправляем событие в Kafka
+            userEventProducer.sendUserDeletedEvent(id, userName, userEmail);
+
         } catch (Exception e) {
             log.error("Ошибка при удалении пользователя: {}", id, e);
             throw new RuntimeException("Не удалось удалить пользователя", e);
