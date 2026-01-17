@@ -8,9 +8,13 @@ import UserService.entity.User;
 import UserService.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import UserService.kafka.UserEventProducer;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -28,10 +32,6 @@ public class UserService {
     @Transactional
     public UserResponse createUser(CreateUserRequest request) {
         try {
-            if (userDao.existsByEmail(request.getEmail())) {
-                throw new Exception ("Пользователь с таким email уже существует");
-            }
-
             User user = userMapper.toEntity(request);
             User savedUser = userDao.save(user);
             log.info("Пользователь сохранен: {}", user.getEmail());
@@ -45,6 +45,9 @@ public class UserService {
             );
             return userMapper.toResponse(savedUser);
         } catch (Exception e) {
+            if (e.getMessage().contains("23505")) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Такой емайл уже есть");
+            }
             log.error("Ошибка при сохранении пользователя", e);
             throw new RuntimeException("Не удалось сохранить пользователя", e);
         }
@@ -80,7 +83,7 @@ public class UserService {
 
     @Transactional
     public UserResponse updateUser(Long id, UpdateUserRequest request) {
-        try {
+
             User user = userDao.findById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
 
@@ -90,6 +93,7 @@ public class UserService {
 
             if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
                 if (userDao.existsByEmail(request.getEmail())) {
+
                     throw new IllegalArgumentException("Новый email уже занят");
                 }
                 user.setEmail(request.getEmail());
@@ -102,15 +106,10 @@ public class UserService {
             User updatedUser = userDao.save(user);
             log.info("Пользователь обновлен: {}", user.getEmail());
             return userMapper.toResponse(updatedUser);
-        } catch (Exception e) {
-            log.error("Ошибка при обновлении пользователя: {}", e);
-            throw new RuntimeException("Не удалось обновить пользователя", e);
-        }
     }
 
     @Transactional
     public void deleteUser(Long id) {
-        try {
             User user = userDao.findById(id)
                     .orElseThrow(() -> {
                         log.warn("Пользователь с ID {} не найден", id);
@@ -126,10 +125,6 @@ public class UserService {
             // Отправляем событие в Kafka
             userEventProducer.sendUserDeletedEvent(id, userName, userEmail);
 
-        } catch (Exception e) {
-            log.error("Ошибка при удалении пользователя: {}", id, e);
-            throw new RuntimeException("Не удалось удалить пользователя", e);
-        }
     }
 
     public List<UserResponse> searchUsersByName(String name) {

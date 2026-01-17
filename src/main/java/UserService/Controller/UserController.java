@@ -20,46 +20,41 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping
-    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
-        UserResponse response = userService.createUser(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    @ResponseStatus(HttpStatus.CREATED)
+    public UserResponse createUser(@Valid @RequestBody CreateUserRequest request) {
+        return userService.createUser(request);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
-        UserResponse response = userService.getUserById(id);
-        return ResponseEntity.ok(response);
+    public UserResponse getUserById(@PathVariable Long id) {
+        return userService.getUserById(id);
     }
 
     @GetMapping
-    public ResponseEntity<List<UserResponse>> getAllUsers() {
-        List<UserResponse> users = userService.getAllUsers();
-        return ResponseEntity.ok(users);
+    public List<UserResponse> getAllUsers() {
+        return userService.getAllUsers();
     }
 
-    @PutMapping("update/{id}")
-    public ResponseEntity<UserResponse> updateUser(
+    @PutMapping("/update/{id}")
+    public UserResponse updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UpdateUserRequest request) {
-        UserResponse response = userService.updateUser(id, request);
-        return ResponseEntity.ok(response);
+        return userService.updateUser(id, request);
     }
 
-    @DeleteMapping("delete/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+    @DeleteMapping("/delete/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
-        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<UserResponse>> searchUsersByName(@RequestParam String name) {
-        List<UserResponse> users = userService.searchUsersByName(name);
-        return ResponseEntity.ok(users);
+    public List<UserResponse> searchUsersByName(@RequestParam String name) {
+        return userService.searchUsersByName(name);
     }
 
     @GetMapping("/count")
-    public ResponseEntity<Long> getUsersCount() {
-        long count = userService.getUserCount();
-        return ResponseEntity.ok(count);
+    public Long getUsersCount() {
+        return userService.getUserCount();
     }
 }
