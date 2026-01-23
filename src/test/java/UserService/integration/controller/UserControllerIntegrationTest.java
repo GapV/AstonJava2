@@ -146,9 +146,9 @@ class UserControllerIntegrationTest {
 
         mockMvc.perform(get("/api/users"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].name").isString())
-                .andExpect(jsonPath("$[1].name").isString());
+                .andExpect(jsonPath("$._embedded.userResponseList.length()").value(2))
+                .andExpect(jsonPath("$._embedded.userResponseList[0].name").isString())
+                .andExpect(jsonPath("$._embedded.userResponseList[1].name").isString());
     }
 
     @Test
@@ -203,7 +203,7 @@ class UserControllerIntegrationTest {
         mockMvc.perform(get("/api/users/search")
                         .param("name", "John"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("John")); // Простая проверка
+                .andExpect(jsonPath("$._embedded.userResponseList[0].name").value("John"));
     }
 
     @Test
