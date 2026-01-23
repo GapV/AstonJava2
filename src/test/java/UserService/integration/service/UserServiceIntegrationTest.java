@@ -208,7 +208,7 @@ class UserServiceIntegrationTest {
         User savedUser2 = userDao.save(user2);
 
         UpdateUserRequest request = new UpdateUserRequest();
-        request.setEmail("first@example.com"); // Дубликат email
+        request.setEmail("first@example.com");
 
         assertThatThrownBy(() -> userService.updateUser(savedUser2.getId(), request))
                 .isInstanceOf(RuntimeException.class)
@@ -309,8 +309,8 @@ class UserServiceIntegrationTest {
         UserResponse response = userService.updateUser(savedUser.getId(), request);
 
         assertThat(response.getName()).isEqualTo("Обновленное Имя");
-        assertThat(response.getEmail()).isEqualTo("original@example.com"); // Осталось прежним
-        assertThat(response.getAge()).isEqualTo(25); // Осталось прежним
+        assertThat(response.getEmail()).isEqualTo("original@example.com");
+        assertThat(response.getAge()).isEqualTo(25);
     }
 
     @Test
