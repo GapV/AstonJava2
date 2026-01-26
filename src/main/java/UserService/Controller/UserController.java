@@ -6,6 +6,7 @@ import UserService.dto.UserResponse;
 import UserService.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +41,9 @@ public class UserController {
     @ResponseStatus(HttpStatus.CREATED)
     public EntityModel<UserResponse> createUser(
             @Parameter(description = "Данные для создания пользователя", required = true)
-            @Valid @RequestBody CreateUserRequest request) {
+            @Valid @RequestBody
+            @Schema(description = "Запрос на создание пользователя", requiredMode = Schema.RequiredMode.REQUIRED)
+            CreateUserRequest request) {
 
         UserResponse userResponse = userService.createUser(request);
 
@@ -61,7 +64,9 @@ public class UserController {
     )
     public EntityModel<UserResponse> getUserById(
             @Parameter(description = "ID пользователя", example = "3")
-            @PathVariable Long id) {
+            @PathVariable
+            @Schema(description = "Идентификатор пользователя", type = "integer", format = "int64", example = "3")
+            Long id) {
 
         UserResponse userResponse = userService.getUserById(id);
 
@@ -112,9 +117,13 @@ public class UserController {
     )
     public EntityModel<UserResponse> updateUser(
             @Parameter(description = "ID пользователя для обновления", example = "3")
-            @PathVariable Long id,
+            @PathVariable
+            @Schema(description = "Идентификатор пользователя", type = "integer", format = "int64", example = "1")
+            Long id,
             @Parameter(description = "Обновленные данные пользователя", required = true)
-            @Valid @RequestBody UpdateUserRequest request) {
+            @Valid @RequestBody
+            @Schema(description = "Запрос на обновление пользователя", requiredMode = Schema.RequiredMode.REQUIRED)
+            UpdateUserRequest request) {
 
         UserResponse userResponse = userService.updateUser(id, request);
 
@@ -136,7 +145,9 @@ public class UserController {
     )
     public void deleteUser(
             @Parameter(description = "ID пользователя для удаления", example = "3")
-            @PathVariable Long id) {
+            @PathVariable
+            @Schema(description = "Идентификатор пользователя для удаления", type = "integer", format = "int64", example = "3")
+            Long id) {
         userService.deleteUser(id);
     }
 
@@ -148,7 +159,9 @@ public class UserController {
     )
     public CollectionModel<EntityModel<UserResponse>> searchUsersByName(
             @Parameter(description = "Имя или часть имени для поиска", required = true, example = "John")
-            @RequestParam String name) {
+            @RequestParam
+            @Schema(description = "Поисковый запрос по имени", requiredMode = Schema.RequiredMode.REQUIRED, example = "John")
+            String name) {
 
         List<EntityModel<UserResponse>> users = userService.searchUsersByName(name).stream()
                 .map(user -> {
@@ -172,6 +185,7 @@ public class UserController {
             summary = "Получить количество пользователей",
             description = "Возвращает общее количество пользователей в системе."
     )
+    @Schema(description = "Количество пользователей", type = "integer", format = "int64", example = "42")
     public Long getUsersCount() {
         return userService.getUserCount();
     }
