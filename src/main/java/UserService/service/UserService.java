@@ -5,11 +5,13 @@ import UserService.dto.CreateUserRequest;
 import UserService.dto.UpdateUserRequest;
 import UserService.dto.UserResponse;
 import UserService.entity.User;
+import UserService.feignClient.NotificationClient;
 import UserService.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import UserService.kafka.UserEventProducer;
@@ -27,7 +29,7 @@ public class UserService {
     private final UserDao userDao;
     private final UserMapper userMapper;
     private final UserEventProducer userEventProducer;
-
+    private final NotificationClient notificationClient;
 
     @Transactional
     public UserResponse createUser(CreateUserRequest request) {
@@ -147,4 +149,16 @@ public class UserService {
             throw new RuntimeException("Ошибка при подсчете пользователей", e);
         }
     }
+
+    public String checkNotificationServiceHealth() {
+        try {
+            String healthResponse = notificationClient.healthCheck();
+            log.info("Notification Service health check: {}", healthResponse);
+            return healthResponse;
+        } catch (Exception e) {
+            log.error("Error checking notification service health: {}", e.getMessage());
+            throw new RuntimeException("Notification service is unavailable", e);
+        }
+    }
+
 }
