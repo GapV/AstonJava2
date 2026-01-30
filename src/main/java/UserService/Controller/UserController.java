@@ -190,6 +190,14 @@ public class UserController {
         return userService.getUserCount();
     }
 
+    // Feign
+    @GetMapping("/check-notification-service")
+    @Operation(summary = "Проверить статус Notification Service")
+    public ResponseEntity<String> checkNotificationService() {
+        String healthStatus = userService.checkNotificationServiceHealth();
+        return ResponseEntity.ok("Notification Service статус: " + healthStatus);
+    }
+
 
 
 }

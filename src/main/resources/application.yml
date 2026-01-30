@@ -1,50 +1,24 @@
 spring:
   application:
-    name: UserService
-  datasource:
-    url: jdbc:postgresql://localhost:5432/postgres
-    password: postgres
-    username: postgres
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: update
-  kafka:
-    bootstrap-servers: localhost:9092
-    consumer:
-      group-id: my-group-id
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-      retries: 3
-      acks: all
-  hateoas:
-    use-hal-as-default-json-media-type: true
+    name: user-service
 
-logging:
-  level:
-    UserService: trace
+  config:
+    import: "optional:configserver:"
 
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-  file:
-    name: logs/user-service.log
-
-springdoc:
-  api-docs:
-    path: /api-docs
-    enabled: true
-  swagger-ui:
-    path: /swagger-ui.html
-    enabled: true
+  cloud:
+    config:
+      enabled: true
+      uri: http://localhost:8888
+      fail-fast: true
+      retry:
+        initial-interval: 1000
+        max-interval: 2000
+        max-attempts: 6
+      discovery:
+        enabled: true
+        service-id: config-server
 
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
-  instance:
-    prefer-ip-address: true
+      defaultZone: http://localhost:8761/eureka
