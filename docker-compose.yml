@@ -1,6 +1,4 @@
 
-version: '3.8'
-
 services:
   postgres:
     image: postgres:15
@@ -13,33 +11,182 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-  # Kafka
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "2181" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   kafka:
     image: confluentinc/cp-kafka:7.4.0
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
     ports:
       - "9092:9092"
+      - "9093:9093"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_HOST://localhost:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: [ "CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   mailhog:
     image: mailhog/mailhog:latest
     ports:
       - "1025:1025"
       - "8025:8025"
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8025" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  service-discovery:
+    image: iph0ne/service-discovery:0.1
+    container_name: service-discovery
+    hostname: service-discovery
+    ports:
+      - "8761:8761"
+    environment:
+      - management.endpoints.web.exposure.include=health,info,metrics
+      - management.endpoint.health.show-details=always
+      - management.endpoint.health.probes.enabled=true
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8761/actuator/health" ]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+
+  config-server:
+    image: iph0ne/config-server:0.1
+    container_name: config-server
+    hostname: config-server
+    ports:
+      - "8888:8888"
+    environment:
+      - eureka.client.service-url.defaultzone=http://service-discovery:8761/eureka/
+      - management.endpoints.web.exposure.include=health,info,metrics
+      - management.endpoint.health.show-details=always
+      - management.endpoint.health.probes.enabled=true
+    depends_on:
+      service-discovery:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8888/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+
+  api-gateway:
+    image: iph0ne/api-gateway:1.0
+    container_name: api-gateway
+    hostname: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - eureka.client.service-url.defaultzone=http://service-discovery:8761/eureka/
+      - spring.cloud.config.uri=http://config-server:8888
+      - spring.cloud.config.fail-fast=false
+      - management.endpoints.web.exposure.include=health,info,metrics
+      - management.endpoint.health.show-details=always
+      - management.endpoint.health.probes.enabled=true
+    depends_on:
+      service-discovery:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    healthcheck:
+        test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health" ]
+        interval: 10s
+        timeout: 5s
+        retries: 10
+        start_period: 30s
+
+  user-service:
+    image: iph0ne/user-service:0.1
+    container_name: user-service
+    hostname: user-service
+    ports:
+      - "8081:8081"
+    environment:
+      - eureka.client.service-url.defaultzone=http://service-discovery:8761/eureka/
+      - spring.cloud.config.uri=http://config-server:8888
+      - spring.cloud.config.fail-fast=false
+      - spring.datasource.url=jdbc:postgresql://postgres-jav:5432/postgres
+      - spring.kafka.bootstrap-servers=kafka:9092
+      - management.endpoints.web.exposure.include=health,info,metrics
+      - management.endpoint.health.show-details=always
+      - management.endpoint.health.probes.enabled=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      service-discovery:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    healthcheck:
+        test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8081/actuator/health" ]
+        interval: 10s
+        timeout: 5s
+        retries: 15
+        start_period: 60s
+
+  notification-service:
+    image: iph0ne/notification-service:0.1
+    container_name: notification-service
+    hostname: notification-service
+    ports:
+      - "8082:8082"
+    environment:
+      - eureka.client.service-url.defaultzone=http://service-discovery:8761/eureka/
+      - spring.cloud.config.uri=http://config-server:8888
+      - spring.cloud.config.fail-fast=false
+      - spring.kafka.bootstrap-servers=kafka:9092
+      - spring.mail.host=mailhog
+      - spring.mail.port=1025
+      - management.endpoints.web.exposure.include=health,info,metrics
+      - management.endpoint.health.show-details=always
+      - management.endpoint.health.probes.enabled=true
+    depends_on:
+      kafka:
+        condition: service_healthy
+      mailhog:
+        condition: service_healthy
+      service-discovery:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    healthcheck:
+        test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8082/actuator/health" ]
+        interval: 10s
+        timeout: 5s
+        retries: 15
+        start_period: 60s
 
 volumes:
   postgres_data:
